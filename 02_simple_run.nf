@@ -1,5 +1,6 @@
 /*
  *This is a nextflow workflow to do a  first quality check of metagenomic datasets.
+ * Steps involve, fastqc, multiqc
  */
 
 /* 
@@ -128,7 +129,7 @@ process remove_host {
     set pair_id, file(reads) from reads_phix_ch
 
     output:
-    set pair_id, file("${pair_id}*.clean.fq.gz") into reads_host_ch
+    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2 
     file "${pair_id}.*.human.fq.gz"
     file "${pair_id}_bbmap_output.log"
 
@@ -157,7 +158,7 @@ process run_coverage {
     tag { pair_id }
 
     input:
-    set pair_id, file(reads) from reads_host_ch
+    set pair_id, file(reads) from clean_data_ch1
 
     output:
     file("${pair_id}*.npo") into r_plotting_ch
@@ -199,3 +200,29 @@ process run_coverage {
     Rscript $baseDir/Rscripts/process_npo_files.r
     """
 }
+
+/************************************************************
+*********  Data analysis of clean data **********************
+*************************************************************/
+
+process Average_gsize {
+    conda 'configuration_files/microbecensus_env.yml'
+    publishDir "${params.outdir}/11_average_genome_size", mode: "${params.savemode}"
+    tag { "all samples" }
+
+    input:
+    set pair_id, file(reads) from clean_data_ch2
+
+    output:
+    file "*.txt"
+    /* file "single_plots"   // folder with single file results */
+    
+    """
+    ${preCmd}
+    run_microbe_census.py -n 100000000 -t $task.cpus \
+     ${pair_id}.R1.clean.fq.gz,${pair_id}.R2.clean.fq.gz \
+     ${pair_id}.avgs_estimate.txt
+
+    """
+}
+

@@ -1,8 +1,9 @@
 #ignore folder with results from running the workflow
 results/
 
-# ignore nextflow log files
+# ignore nextflow log files and folder
 .nextflow.lo*
+.nextflow/
 
 # ignore stupid apple files
 .DS_Store
