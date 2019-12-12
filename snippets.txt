@@ -1,0 +1,35 @@
+process fastqc {
+    conda 'configuration_files/fastqc_env.yml'
+    
+    tag "FASTQC on $sample_id"
+
+    input:
+    set sample_id, file(reads) from cleaned_ch
+
+    output:
+    file("fastqc_logs") into fastqc_ch
+
+
+    script:
+    """
+    mkdir fastqc_logs
+    fastqc -o fastqc_logs -f fastq -q ${reads}
+    """  
+}  
+
+process multiqc {
+    conda 'configuration_files/multiqc_env.yml'
+
+    publishDir params.outdir, mode:'copy'
+       
+    input:
+    file('*') from fastqc_ch.collect()
+    
+    output:
+    file('multiqc_report.html')  
+     
+    script:
+    """
+    multiqc . 
+    """
+} 

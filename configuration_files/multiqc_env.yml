@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - multiqc=1.6  #osx-64
+#  - multiqc=1.8  #linux
