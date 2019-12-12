@@ -1,5 +1,6 @@
 /*
- *This is a nextflow workflow to do a  first quality check of metagenomic datasets.
+ * This is a nextflow workflow to do a first quality check of metagenomic datasets.
+ * The steps involve running fastqc, multiqc, and an analysis of sequencing depth using nonpareil.
  */
 
 /* 
@@ -7,9 +8,11 @@
  */
 
 log.info """\
-         METAGENOMICS - N F   P I P E L I N E    
+         TALOS - a metagenomics shotgun pipeline    
          ===================================
-         
+         This current workflow generates a multiqc report
+         and it calculates the coverage of the metagenomic samples.
+
          input - reads                  : ${params.reads}
          files in read set              : ${params.setsize}
          output - directory             : ${params.outdir}
