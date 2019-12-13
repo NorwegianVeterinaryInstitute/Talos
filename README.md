@@ -16,4 +16,5 @@ The Wiki contains information about how to install and run.
 
 # Workflow scheme
 
-![Talos shotgun metagenomics workflow](Talos_workflow.svg]
+![](Talos_workflow.svg)
+
