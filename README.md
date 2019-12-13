@@ -16,5 +16,5 @@ The Wiki contains information about how to install and run.
 
 # Workflow scheme
 
-![](Talos_workflow.svg)
+![](figures/Talos_workflow.svg)
 
