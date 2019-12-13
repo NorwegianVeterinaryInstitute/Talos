@@ -129,7 +129,7 @@ process remove_host {
     set pair_id, file(reads) from reads_phix_ch
 
     output:
-    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2 
+    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4
     file "${pair_id}.*.human.fq.gz"
     file "${pair_id}_bbmap_output.log"
 
@@ -149,8 +149,55 @@ process remove_host {
     """
 }
 
+/* Run fastqc, Multi qc for quality control of the final cleaned datasets
+*/
+
+process fastqc {
+    conda 'configuration_files/fastqc_env.yml'
+
+    publishDir "${params.outdir}/01_fastqc", mode: "copy"
+    
+    tag "FASTQC on $sample_id"
+
+    input:
+    set sample_id, file(reads) from clean_data_ch1
+
+    output:
+    file("fastqc_${sample_id}_logs") into fastqc_clean_ch
+
+
+    script:
+    """
+    ${preCmd}
+    mkdir fastqc_${sample_id}_logs
+    fastqc -o fastqc_${sample_id}_logs -f fastq -q ${reads}
+    """  
+}  
+ 
+// running multiqc on the fastqc files from the channel: fastqc_clean_ch
+
+process multiqc {
+    conda 'configuration_files/multiqc_env.yml'
+    publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
+       
+    input:
+    file('*') from fastqc_clean_ch.collect()
+    
+    output:
+    file('raw_data.multiqc_report.html')  
+     
+    script:
+    """
+    ${preCmd}
+    multiqc . 
+    mv multiqc_report.html raw_data.multiqc_report.html
+    """
+} 
+
+
+
 /*
- * Calculate the sequence coverage of the metagenomes
+ * Calculate the sequence coverage of the clean metagenomes
  */
 process run_coverage {
     conda 'configuration_files/nonpareil_env.yml'
@@ -158,7 +205,7 @@ process run_coverage {
     tag { pair_id }
 
     input:
-    set pair_id, file(reads) from clean_data_ch1
+    set pair_id, file(reads) from clean_data_ch2
 
     output:
     file("${pair_id}*.npo") into r_plotting_ch
@@ -205,13 +252,15 @@ process run_coverage {
 *********  Data analysis of clean data **********************
 *************************************************************/
 
+/* Calculate average genome size using microbecensus */
+
 process Average_gsize {
     conda 'configuration_files/microbecensus_env.yml'
     publishDir "${params.outdir}/11_average_genome_size", mode: "${params.savemode}"
-    tag { "all samples" }
+    tag { pair_id }
 
     input:
-    set pair_id, file(reads) from clean_data_ch2
+    set pair_id, file(reads) from clean_data_ch3
 
     output:
     file "*.txt"
@@ -226,3 +275,55 @@ process Average_gsize {
     """
 }
 
+/*** TODO: add rscript to process average genome size results /
+
+
+/* Calculate mash sketches of each clean dataset */
+
+process mash_calculation {
+    conda 'configuration_files/mash_env.yml'
+    publishDir "${params.outdir}/12_mash_distances", mode: "${params.savemode}"
+    tag { "all samples" }
+
+    input:
+    set pair_id, file(reads) from clean_data_ch4
+
+    output:
+    file("${pair_id}*.dist.msh") into mash_distance_ch
+    
+    """
+    ${preCmd}
+    gunzip -f ${pair_id}.R1.clean.fq.gz ${pair_id}.R2.clean.fq.gz
+    
+    cat ${pair_id}.R1.clean.fq ${pair_id}.R2.clean.fq > ${pair_id}.clean.fq
+    
+    rm -r ${pair_id}.R*.clean.fq  # clean up unwanted files
+
+    mash sketch -b 10 -k 27 -s 50000 \
+    -o ${pair_id}.dist.msh \
+    -r ${pair_id}.clean.fq
+
+    gzip ${pair_id}.clean.fq
+    """
+}
+
+/* Calculate mash distances of all vs all datasets */
+
+process mash_distance {
+    conda 'configuration_files/mash_env.yml'
+    publishDir "${params.outdir}/12_mash_distances", mode: "${params.savemode}"
+    tag { "all samples" }
+
+    input:
+    file("*") from mash_distance_ch.collect()
+
+    output:
+    file("all_samples.dist.txt") into next_plot_ch
+    
+    """
+    ${preCmd}
+    mash dist *.dist.msh > all_samples.dist.txt
+    """
+}
+
+/*** TODO: add rscript to process distance calculation and plot heatmap with clustering /
