@@ -76,34 +76,30 @@ process multiqc {
     """
 } 
 
-/* running trimmomatic to remove adapters sequences
- * $task.cpus to specify cpus to use
- */ 
-
 /*
  * Calculate the sequence coverage of the metagenomes
  */
 process run_coverage {
     conda 'configuration_files/nonpareil_env.yml'
     publishDir "${params.outdir}/03_nonpareil_data", mode: "${params.savemode}"
-    tag { pair_id }
+    tag { sample_id }
 
     input:
-    set pair_id, file(reads) from read_pairs2_ch
+    set sample_id, file(reads) from read_pairs2_ch
 
     output:
-    file("${pair_id}*.npo") into r_plotting_ch
-    file "${pair_id}*.npa"
-    file "${pair_id}*.npc"
-    file "${pair_id}*.npl"
-    file "${pair_id}*.npo"
+    file("${sample_id}*.npo") into r_plotting_ch
+    file "${sample_id}*.npa"
+    file "${sample_id}*.npc"
+    file "${sample_id}*.npl"
+    file "${sample_id}*.npo"
     
     
 
     """
     ${preCmd}
     gunzip -f *.gz
-    nonpareil -s *.R1.* -T kmer -f fastq -b ${pair_id}_R1 \
+    nonpareil -s *.R1.* -T kmer -f fastq -b ${sample_id}_R1 \
      -X ${params.query} -n ${params.subsample} -t $task.cpus
      sleep 10s
     """
