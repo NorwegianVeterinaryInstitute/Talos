@@ -129,7 +129,7 @@ process remove_host {
     set pair_id, file(reads) from reads_phix_ch
 
     output:
-    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4
+    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4, clean_data_ch5
     file "${pair_id}.*.human.fq.gz"
     file "${pair_id}_bbmap_output.log"
 
@@ -323,6 +323,50 @@ process mash_distance {
     """
     ${preCmd}
     mash dist *.dist.msh > all_samples.dist.txt
+    """
+}
+
+
+/* Calculate hulk sketches of each clean dataset */
+
+process hulk_calculation {
+    conda 'configuration_files/hulk_env.yml'
+    publishDir "${params.outdir}/12_hulk_distances", mode: "${params.savemode}"
+    tag { "all samples" }
+
+    input:
+    set pair_id, file(reads) from clean_data_ch5
+
+    output:
+    file("${pair_id}.json") into hulk_distance_ch
+    
+    """
+    ${preCmd}
+    gunzip -f ${pair_id}.R*.clean.fq.gz
+    cat ${pair_id}.R*.clean.fq > ${pair_id}.clean.fq
+
+    hulk sketch -k 31 -f ${pair_id}.clean.fq -o ${pair_id} 
+    
+    """
+}
+
+/* Calculate hulk distances of all vs all datasets */
+
+process hulk_distance {
+    conda 'configuration_files/hulk_env.yml'
+    publishDir "${params.outdir}/12_hulk_distances", mode: "${params.savemode}"
+    tag { "all samples" }
+
+    input:
+    file("*") from hulk_distance_ch.collect()
+
+    output:
+    file("all_samples.Weighted_Jaccard.hulk-matrix.csv") into next_plot_ch2
+    
+    """
+    ${preCmd}
+    hulk smash -k 31 -m weightedjaccard -d ./ -o all_samples.Weighted_Jaccard
+
     """
 }
 
