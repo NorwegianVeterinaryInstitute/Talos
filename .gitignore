@@ -7,3 +7,6 @@ results/
 
 # ignore stupid apple files
 .DS_Store
+
+# ignore folder with kraken2 minidatabase
+databases/kraken_2_mini
