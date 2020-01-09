@@ -129,7 +129,7 @@ process remove_host {
     set pair_id, file(reads) from reads_phix_ch
 
     output:
-    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4, clean_data_ch5
+    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4
     file "${pair_id}.*.human.fq.gz"
     file "${pair_id}_bbmap_output.log"
 
@@ -263,8 +263,7 @@ process Average_gsize {
     set pair_id, file(reads) from clean_data_ch3
 
     output:
-    file "*.txt"
-    /* file "single_plots"   // folder with single file results */
+    file ("${pair_id}*.txt") into avg_plot_ch
     
     """
     ${preCmd}
@@ -275,54 +274,20 @@ process Average_gsize {
     """
 }
 
-/*** TODO: add rscript to process average genome size results /
-
-
-/* Calculate mash sketches of each clean dataset */
-
-process mash_calculation {
-    conda 'configuration_files/mash_env.yml'
-    publishDir "${params.outdir}/12_mash_distances", mode: "${params.savemode}"
-    tag { "all samples" }
+process plot_avgsizes {
+    conda 'configuration_files/microbecensus_env.yml'
+    publishDir "${params.outdir}/12_average_genome_size_plots", mode: "${params.savemode}"
+    tag { "all_samples" }
 
     input:
-    set pair_id, file(reads) from clean_data_ch4
+    file("*") from avg_plot_ch.collect()
 
     output:
-    file("${pair_id}*.dist.msh") into mash_distance_ch
-    
+    file "*.pdf"
+
     """
     ${preCmd}
-    gunzip -f ${pair_id}.R1.clean.fq.gz ${pair_id}.R2.clean.fq.gz
-    
-    cat ${pair_id}.R1.clean.fq ${pair_id}.R2.clean.fq > ${pair_id}.clean.fq
-    
-    rm -r ${pair_id}.R*.clean.fq  # clean up unwanted files
-
-    mash sketch -b 10 -k 27 -s 50000 \
-    -o ${pair_id}.dist.msh \
-    -r ${pair_id}.clean.fq
-
-    gzip ${pair_id}.clean.fq
-    """
-}
-
-/* Calculate mash distances of all vs all datasets */
-
-process mash_distance {
-    conda 'configuration_files/mash_env.yml'
-    publishDir "${params.outdir}/12_mash_distances", mode: "${params.savemode}"
-    tag { "all samples" }
-
-    input:
-    file("*") from mash_distance_ch.collect()
-
-    output:
-    file("all_samples.dist.txt") into next_plot_ch
-    
-    """
-    ${preCmd}
-    mash dist *.dist.msh > all_samples.dist.txt
+    Rscript $baseDir/Rscripts/create_AVGsize_plots.r
     """
 }
 
@@ -331,21 +296,22 @@ process mash_distance {
 
 process hulk_calculation {
     conda 'configuration_files/hulk_env.yml'
-    publishDir "${params.outdir}/12_hulk_distances", mode: "${params.savemode}"
+    publishDir "${params.outdir}/13_hulk_distances", mode: "${params.savemode}"
     tag { "all samples" }
 
     input:
-    set pair_id, file(reads) from clean_data_ch5
+    set pair_id, file(reads) from clean_data_ch4
 
     output:
-    file("${pair_id}.json") into hulk_distance_ch
+    file ("${pair_id}*.json") into hulk_distance_ch
     
     """
     ${preCmd}
     gunzip -f ${pair_id}.R*.clean.fq.gz
     cat ${pair_id}.R*.clean.fq > ${pair_id}.clean.fq
 
-    hulk sketch -k 31 -f ${pair_id}.clean.fq -o ${pair_id} 
+    hulk sketch -k 31 -f ${pair_id}.clean.fq -o ${pair_id}.R12 
+    rm -r *.fq
     
     """
 }
@@ -354,20 +320,19 @@ process hulk_calculation {
 
 process hulk_distance {
     conda 'configuration_files/hulk_env.yml'
-    publishDir "${params.outdir}/12_hulk_distances", mode: "${params.savemode}"
+    publishDir "${params.outdir}/14_hulk_heatmap", mode: "${params.savemode}"
     tag { "all samples" }
 
     input:
-    file("*") from hulk_distance_ch.collect()
+    file ("*") from hulk_distance_ch.collect()
 
     output:
-    file("all_samples.Weighted_Jaccard.hulk-matrix.csv") into next_plot_ch2
+    file "*.pdf"
+    file("all_samples.Weighted_Jaccard.hulk-matrix.csv")
     
     """
     ${preCmd}
     hulk smash -k 31 -m weightedjaccard -d ./ -o all_samples.Weighted_Jaccard
-
+    Rscript $baseDir/Rscripts/create_hulk_heatmap.r
     """
 }
-
-/*** TODO: add rscript to process distance calculation and plot heatmap with clustering */
