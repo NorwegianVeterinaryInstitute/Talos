@@ -1,10 +1,21 @@
-#!#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript
 
 # a script to process the data from nonpareil and generate a meaningful figure
-require(Nonpareil, quietly = TRUE)
 
-#set directory
-#setwd("./")
+#functions
+# check.packages function: install and load multiple R packages. 
+# (downloaded from: https://gist.github.com/smithdanielle/9913897)
+# Check to see if packages are installed. Install them if they are not, then load them into the R session.
+check.packages <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE, repos="https://cran.uib.no/")
+  sapply(pkg, require, character.only = TRUE)
+}
+
+#Libraries to load and install if needed.
+packages<-c("Nonpareil")
+check.packages(packages)
 
 # create list of npo files to process with this script, and count element of list
 npo_files <- list.files(".", pattern = "*.npo",full.names = TRUE)
@@ -31,4 +42,4 @@ for (i in 1:number){
 png(filename= "non_pareil_plot.png",
     width = 12, height = 9, units="in", res=300, bg="white") 
 p <- Nonpareil.curve.batch(npo_files, col=all_colors(number))
-#dev.off() 
+dev.off() 

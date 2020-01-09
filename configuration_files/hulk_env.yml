@@ -1,6 +1,8 @@
 channels:
   - conda-forge
   - bioconda
+  - r
   - defaults
 dependencies:
   - hulk=1.0.0
+  - r-base=3.6.1
