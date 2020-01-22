@@ -12,8 +12,6 @@
  * and where to store the results
  */
 
-// specify the directory for the temporary files
-workDir = "$USERWORK/Talos_temp"
 
 //Specify the location and format of the input data
 params.reads = "$baseDir/test_data/*.R{1,2}.fastq.gz"
