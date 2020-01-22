@@ -4,6 +4,7 @@ This is pre-publication software that is currently under active development. Use
 
 # Talos
 A shotgun metagenomic analysis pipeline using nextflow. This pipeline is developed as part of the bioinformatic toolkit for metagenomic data analysis at the Norwegian veterinary institute as part of the Internal SEQ-TECH project. A manual will be made in the future
+
 Author: Thomas H.A. Haverkamp, [@Thomieh](https://twitter.com/Thomieh)
 
 Contact information: please submit an issue, and the author will get back to you.
