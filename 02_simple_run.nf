@@ -1,6 +1,9 @@
 /*
- *This is a nextflow workflow to do a  first quality check of metagenomic datasets.
- * Steps involve, fastqc, multiqc
+ *This is a nextflow workflow to analyze metagenomic datasets.
+ * Steps involve quality control, quality trimming, calculation of sequencing depth based on the complexity of the metagenome
+ * Calculation of average genome sizes for the metagenomes, calculation of Jaccard distances using Hulk to seperate samples.
+ * Taxonomic classification with Kraken 2.
+ * 
  */
 
 /* 
@@ -22,9 +25,9 @@ log.info """\
          """
          .stripIndent()
 
-// Needed to run on the Abel cluster
+// Needed to run on the Saga HPC cluster !!!!EDIT this!!! 
 preCmd = """
-if [ -f /cluster/bin/jobsetup ];
+if [ -f /cluster/bin/jobsetup ];  
 then set +u; source /cluster/bin/jobsetup; set -u; fi
 """
 
@@ -46,7 +49,7 @@ process run_trim {
     set pair_id, file(reads) from read_pairs_ch
 
     output:
-    set pair_id, file("${pair_id}*.trimmed.fq.gz") into reads_trimmed_ch
+    set pair_id, file("${pair_id}_R{1,2}.trimmed.fq.gz") into reads_trimmed_ch
     file "${pair_id}_trimmed.log"
 
     """
@@ -129,7 +132,7 @@ process remove_host {
     set pair_id, file(reads) from reads_phix_ch
 
     output:
-    set pair_id, file("${pair_id}.R*.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4
+    set pair_id, file("${pair_id}.R{1,2}.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4
     file "${pair_id}.*.human.fq.gz"
     file "${pair_id}_bbmap_output.log"
 
