@@ -25,11 +25,11 @@ log.info """\
          """
          .stripIndent()
 
-// Needed to run on the Saga HPC cluster !!!!EDIT this!!! 
-preCmd = """
-if [ -f /cluster/bin/jobsetup ];  
-then set +u; source /cluster/bin/jobsetup; set -u; fi
-"""
+// Needed to run on the Saga HPC cluster !!!! NO LONGER NEEDED 
+//preCmd = """
+//if [ -f /cluster/bin/jobsetup ];  
+//then set +u; source /cluster/bin/jobsetup; set -u; fi
+///"""
 
 // Creating the channels needed for the first analysis step
 Channel 
@@ -41,7 +41,7 @@ Channel
  */ 
 
 process run_trim {
-    conda 'configuration_files/trimmomatic_env.yml'
+    conda 'conda_yml/trimmomatic_env.yml'
     publishDir "${params.outdir}/05_fastq_trimmed", mode: "${params.savemode}"
     tag { pair_id }
 
@@ -53,7 +53,7 @@ process run_trim {
     file "${pair_id}_trimmed.log"
 
     """
-    ${preCmd}
+    
     trimmomatic PE -threads $task.cpus -trimlog ${pair_id}_trimmed.log ${pair_id}*.gz \
     -baseout ${pair_id}_trimmed.fq.gz ILLUMINACLIP:${params.adapter_dir}/${params.adapters}:${params.illuminaClipOptions} \
     SLIDINGWINDOW:${params.slidingwindow} \
@@ -62,6 +62,7 @@ process run_trim {
     mv ${pair_id}_trimmed_1P.fq.gz ${pair_id}_R1.trimmed.fq.gz
     mv ${pair_id}_trimmed_2P.fq.gz ${pair_id}_R2.trimmed.fq.gz
     cat ${pair_id}_trimmed_1U.fq.gz ${pair_id}_trimmed_2U.fq.gz > ${pair_id}_S_concat_stripped_trimmed.fq.gz
+    
     """
 }
 
@@ -69,7 +70,7 @@ process run_trim {
  * remove low-complexity reads from datasets with bbduk
  */
 process run_low_complex {
-    conda 'configuration_files/bbmap_env.yml'
+    conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/06_bbduk_highC", mode: "${params.savemode}"
     tag { pair_id }
 
@@ -81,7 +82,7 @@ process run_low_complex {
     file "${pair_id}_bbduk_output.log"
 
     """
-    ${preCmd}
+    
     bbduk.sh threads=$task.cpus entropy=0.7 entropywindow=50 entropyk=5 \
     in1=${pair_id}_R1.trimmed.fq.gz \
     in2=${pair_id}_R2.trimmed.fq.gz \
@@ -89,6 +90,7 @@ process run_low_complex {
     out1=${pair_id}_R1.trimmed.highC.fq.gz \
     out2=${pair_id}_R2.trimmed.highC.fq.gz \
     stats=stats.txt &> ${pair_id}_bbduk_output.log
+    
     """
 }
 
@@ -96,7 +98,7 @@ process run_low_complex {
  * remove reads matching to phiX with bbduk
  */
 process remove_phiX {
-    conda 'configuration_files/bbmap_env.yml'
+    conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/07_bbduk_phix", mode: "${params.savemode}"
     tag { pair_id }
 
@@ -108,7 +110,7 @@ process remove_phiX {
     file "${pair_id}_bbduk_output.log"
 
     """
-    ${preCmd}
+    
     bbduk.sh threads=$task.cpus ref=${params.phix_dir}/${params.phix_file} k=31 hdist=1 \
     in1=${pair_id}_R1.trimmed.highC.fq.gz \
     in2=${pair_id}_R2.trimmed.highC.fq.gz\
@@ -116,6 +118,7 @@ process remove_phiX {
     out1=${pair_id}.R1.trimmed.highC.phix.fq.gz \
     out2=${pair_id}.R2.trimmed.highC.phix.fq.gz \
     stats=stats.txt &> ${pair_id}_bbduk_output.log
+    
     """
 }
 
@@ -124,7 +127,7 @@ process remove_phiX {
  */
 
 process remove_host {
-    conda 'configuration_files/bbmap_env.yml'
+    conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/08_bbmap_host", mode: "${params.savemode}"
     tag { pair_id }
 
@@ -137,7 +140,7 @@ process remove_host {
     file "${pair_id}_bbmap_output.log"
 
     """
-    ${preCmd}
+    
     bbmap.sh -Xmx15g threads=6 \
     minid=0.95 maxindel=3 bwr=0.16 bw=12 \
     quickmatch fast minhits=2 \
@@ -149,6 +152,7 @@ process remove_host {
     outm=${pair_id}.R1.human.fq.gz \
     outm2=${pair_id}.R2.human.fq.gz \
     statsfile=${pair_id}.human_result.txt &> ${pair_id}_bbmap_output.log
+    
     """
 }
 
@@ -156,7 +160,7 @@ process remove_host {
 */
 
 process fastqc {
-    conda 'configuration_files/fastqc_env.yml'
+    conda 'conda_yml/fastqc_env.yml'
 
     publishDir "${params.outdir}/01_fastqc", mode: "copy"
     
@@ -171,16 +175,17 @@ process fastqc {
 
     script:
     """
-    ${preCmd}
+    
     mkdir fastqc_${sample_id}_logs
     fastqc -o fastqc_${sample_id}_logs -f fastq -q ${reads}
+    
     """  
 }  
  
 // running multiqc on the fastqc files from the channel: fastqc_clean_ch
 
 process multiqc {
-    conda 'configuration_files/multiqc_env.yml'
+    conda 'conda_yml/multiqc_env.yml'
     publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
        
     input:
@@ -191,9 +196,10 @@ process multiqc {
      
     script:
     """
-    ${preCmd}
+    
     multiqc . 
     mv multiqc_report.html raw_data.multiqc_report.html
+    
     """
 } 
 
@@ -203,7 +209,7 @@ process multiqc {
  * Calculate the sequence coverage of the clean metagenomes
  */
 process run_coverage {
-    conda 'configuration_files/nonpareil_env.yml'
+    conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/09_nonpareil", mode: "${params.savemode}"
     tag { pair_id }
 
@@ -220,11 +226,12 @@ process run_coverage {
     
 
     """
-    ${preCmd}
+    
     gunzip -f *.fq.gz
     nonpareil -s *.R1.clean.fq -T kmer -f fastq -b ${pair_id}_R1 \
      -X ${params.query} -n ${params.subsample} -t $task.cpus
      sleep 10s
+    
     """
 }
 
@@ -233,7 +240,7 @@ process run_coverage {
  */
 
  process plot_coverage {
-    conda 'configuration_files/nonpareil_env.yml'
+    conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/10_coverage_plots_clean_data", mode: "${params.savemode}"
     tag { "all samples" }
 
@@ -245,9 +252,10 @@ process run_coverage {
     file "single_plots"   // folder with single file results
 
     """
-    ${preCmd}
+    
     mkdir single_plots
     Rscript $baseDir/Rscripts/process_npo_files.r
+    
     """
 }
 
@@ -258,7 +266,7 @@ process run_coverage {
 /* Calculate average genome size using microbecensus */
 
 process Average_gsize {
-    conda 'configuration_files/microbecensus_env.yml'
+    conda 'conda_yml/microbecensus_env.yml'
     publishDir "${params.outdir}/11_average_genome_size", mode: "${params.savemode}"
     tag { pair_id }
 
@@ -269,7 +277,7 @@ process Average_gsize {
     file ("${pair_id}*.txt") into avg_plot_ch
     
     """
-    ${preCmd}
+    
     run_microbe_census.py -n 100000000 -t $task.cpus \
      ${pair_id}.R1.clean.fq.gz,${pair_id}.R2.clean.fq.gz \
      ${pair_id}.avgs_estimate.txt
@@ -278,7 +286,7 @@ process Average_gsize {
 }
 
 process plot_avgsizes {
-    conda 'configuration_files/microbecensus_env.yml'
+    conda 'conda_yml/microbecensus_env.yml'
     publishDir "${params.outdir}/12_average_genome_size_plots", mode: "${params.savemode}"
     tag { "all_samples" }
 
@@ -289,8 +297,9 @@ process plot_avgsizes {
     file "*.pdf"
 
     """
-    ${preCmd}
+    
     Rscript $baseDir/Rscripts/create_AVGsize_plots.r
+    
     """
 }
 
@@ -298,7 +307,7 @@ process plot_avgsizes {
 /* Calculate hulk sketches of each clean dataset */
 
 process hulk_calculation {
-    conda 'configuration_files/hulk_env.yml'
+    conda 'conda_yml/hulk_env.yml'
     publishDir "${params.outdir}/13_hulk_distances", mode: "${params.savemode}"
     tag { "all samples" }
 
@@ -309,7 +318,7 @@ process hulk_calculation {
     file ("${pair_id}*.json") into hulk_distance_ch
     
     """
-    ${preCmd}
+    
     gunzip -f ${pair_id}.R*.clean.fq.gz
     cat ${pair_id}.R*.clean.fq > ${pair_id}.clean.fq
 
@@ -322,7 +331,7 @@ process hulk_calculation {
 /* Calculate hulk distances of all vs all datasets */
 
 process hulk_distance {
-    conda 'configuration_files/hulk_env.yml'
+    conda 'conda_yml/hulk_env.yml'
     publishDir "${params.outdir}/14_hulk_heatmap", mode: "${params.savemode}"
     tag { "all samples" }
 
@@ -334,8 +343,9 @@ process hulk_distance {
     file("all_samples.Weighted_Jaccard.hulk-matrix.csv")
     
     """
-    ${preCmd}
+    
     hulk smash -k 31 -m weightedjaccard -d ./ -o all_samples.Weighted_Jaccard
     Rscript $baseDir/Rscripts/create_hulk_heatmap.r
+    
     """
 }
