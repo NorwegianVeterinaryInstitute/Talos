@@ -40,6 +40,7 @@ process fastqc {
     publishDir "${params.outdir}/01_fastqc", mode: "copy"
     
     tag "FASTQC on $sample_id"
+    label 'small'
 
     input:
     set sample_id, file(reads) from read_pairs_ch
@@ -62,7 +63,9 @@ process fastqc {
 process multiqc {
     conda 'conda_yml/multiqc_env.yml'
     publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
-       
+    tag "multiqc on fastqc"
+    label 'small'
+
     input:
     file('*') from fastqc_raw_ch.collect()
     
@@ -85,6 +88,7 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/03_nonpareil_data", mode: "${params.savemode}"
     tag { sample_id }
+    label 'medium'
 
     input:
     set sample_id, file(reads) from read_pairs2_ch
@@ -115,6 +119,7 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/04_coverage_plots_raw_data", mode: "${params.savemode}"
     tag { "All_samples" }
+    label 'small'
 
     input:
     file('*') from r_plotting_ch.collect()
