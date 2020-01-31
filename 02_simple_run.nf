@@ -45,6 +45,8 @@ process run_trim {
     publishDir "${params.outdir}/05_fastq_trimmed", mode: "${params.savemode}"
     tag { pair_id }
 
+    label 'medium'
+
     input:
     set pair_id, file(reads) from read_pairs_ch
 
@@ -73,6 +75,7 @@ process run_low_complex {
     conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/06_bbduk_highC", mode: "${params.savemode}"
     tag { pair_id }
+
 
     input:
     set pair_id, file(reads) from reads_trimmed_ch
@@ -165,6 +168,7 @@ process fastqc {
     publishDir "${params.outdir}/01_fastqc", mode: "copy"
     
     tag "FASTQC on $sample_id"
+    label 'small'
 
     input:
     set sample_id, file(reads) from clean_data_ch1
@@ -187,7 +191,8 @@ process fastqc {
 process multiqc {
     conda 'conda_yml/multiqc_env.yml'
     publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
-       
+    label 'small'
+
     input:
     file('*') from fastqc_clean_ch.collect()
     
@@ -212,6 +217,7 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/09_nonpareil", mode: "${params.savemode}"
     tag { pair_id }
+    
 
     input:
     set pair_id, file(reads) from clean_data_ch2
@@ -243,6 +249,7 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/10_coverage_plots_clean_data", mode: "${params.savemode}"
     tag { "all samples" }
+    label 'small'
 
     input:
     file('*') from r_plotting_ch.collect()
@@ -289,6 +296,7 @@ process plot_avgsizes {
     conda 'conda_yml/microbecensus_env.yml'
     publishDir "${params.outdir}/12_average_genome_size_plots", mode: "${params.savemode}"
     tag { "all_samples" }
+    label 'small'
 
     input:
     file("*") from avg_plot_ch.collect()
@@ -310,6 +318,7 @@ process hulk_calculation {
     conda 'conda_yml/hulk_env.yml'
     publishDir "${params.outdir}/13_hulk_distances", mode: "${params.savemode}"
     tag { "all samples" }
+    label 'medium'
 
     input:
     set pair_id, file(reads) from clean_data_ch4
@@ -322,7 +331,8 @@ process hulk_calculation {
     gunzip -f ${pair_id}.R*.clean.fq.gz
     cat ${pair_id}.R*.clean.fq > ${pair_id}.clean.fq
 
-    hulk sketch -k 31 -f ${pair_id}.clean.fq -o ${pair_id}.R12 
+    hulk sketch -k 31 -p $task.cpus \
+        -f ${pair_id}.clean.fq -o ${pair_id}.R12 
     rm -r *.fq
     
     """
@@ -334,6 +344,7 @@ process hulk_distance {
     conda 'conda_yml/hulk_env.yml'
     publishDir "${params.outdir}/14_hulk_heatmap", mode: "${params.savemode}"
     tag { "all samples" }
+    label 'small'
 
     input:
     file ("*") from hulk_distance_ch.collect()
