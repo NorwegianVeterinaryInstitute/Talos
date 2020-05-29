@@ -27,6 +27,10 @@ all_colors <- colorRampPalette(c("#CBD588", "#5F7FC7", "orange","#DA5724", "#508
                                  "#AD6F3B", "#673770","#D14285", "#652926", "#C84248", 
                                  "#8569D5", "#5E738F","#D1A33D", "#8A7C64", "#599861"))
 
+# creating a textfile to collect the summary of the Nonpareil.Curve results
+headers <- c("kappa","C","LR","modelR","LRstar","diversity")
+write(headers, "Curves_summary.txt", append=TRUE, ncolumns=6, sep="\t")
+
 # plotting each sample as an individual graph with an dispersion distribution around it.
 #system("mkdir single_plots")
 
@@ -37,7 +41,12 @@ for (i in 1:number){
   p <- Nonpareil.curve(npo_files[i], plot.dispersion="sd", col="black")
   Nonpareil.legend(p)
   dev.off()
+  
+  #wr #writting to Curves_summary.txt file
+  Values_p <- summary.Nonpareil.Curve(p)
+  write(Values_p, "Curves_summary.txt", append=TRUE, ncolumns=6,sep="\t")
 }
+
 ## printing all samples in one graph
 png(filename= "non_pareil_plot.png",
     width = 12, height = 9, units="in", res=300, bg="white") 
