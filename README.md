@@ -13,7 +13,7 @@ Contact information: please submit an issue, and the author will get back to you
 This software is published under the BSD 3-clause license. See the LICENSE file in the repository.
 
 # How to use
-The Wiki contains information about how to install and run.
+The Wiki contains information about how to install and run. [Just go to the wiki](https://github.com/NorwegianVeterinaryInstitute/Talos/wiki/The-Talos-Wiki)
 
 # Workflow scheme
 
