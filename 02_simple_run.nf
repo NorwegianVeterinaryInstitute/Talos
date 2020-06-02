@@ -138,7 +138,8 @@ process remove_host {
     set pair_id, file(reads) from reads_phix_ch
 
     output:
-    set pair_id, file("${pair_id}.R{1,2}.clean.fq.gz") into  clean_data_ch1,  clean_data_ch2, clean_data_ch3, clean_data_ch4
+    set pair_id, file("${pair_id}.R{1,2}.clean.fq.gz") into  clean_data_ch1,
+          clean_data_ch2, clean_data_ch3, clean_data_ch4, clean_data_ch5
     file "${pair_id}.*.human.fq.gz"
     file "${pair_id}_bbmap_output.log"
 
@@ -358,5 +359,53 @@ process hulk_distance {
     hulk smash -k 31 -m weightedjaccard -d ./ -o all_samples.Weighted_Jaccard
     Rscript $baseDir/Rscripts/create_hulk_heatmap.r
     
+    """
+}
+
+/* Do taxonomic classification with kraken 2 */
+
+/* kraken2 -db ${params.kraken2_dir} \
+    --threads $task.cpus \
+    --minimum-base-quality 20 \
+    --gzip-compressed \
+    --output ${pair_id}.kr2.out \
+    --report ${pair_id}.kr2.report \
+    --classified-out ${pair_id}.classified.R#.fastq.gz  \
+    --unclassified-out ${pair_id}.unclassified.R#.fastq.gz \
+    --paired \
+    ${pair_id}.R1.clean.fq.gz ${pair_id}.R2.clean.fq.gz */
+
+
+process Kraken_classification {
+    conda 'conda_yml/kraken2_env.yml'
+    publishDir "${params.outdir}/15_kraken2_classification", mode: "${params.savemode}"
+    tag { "all samples" }
+    label 'small'
+
+    input:
+    set pair_id, file(reads) from clean_data_ch5
+
+    output:
+    file "*"
+    
+
+    """
+    #gunzip -f *.fq.gz
+    
+    kraken2 -v
+    
+    kraken2 -db ${params.kraken2_dir} \
+    --threads $task.cpus \
+    --minimum-base-quality 20 \
+    --gzip-compressed \
+    --output ${pair_id}.kr2.out \
+    --report ${pair_id}.kr2.report \
+    --classified-out ${pair_id}.classified.R#.fastq.gz  \
+    --unclassified-out ${pair_id}.unclassified.R#.fastq.gz \
+    --paired \
+    ${pair_id}.R1.clean.fq.gz ${pair_id}.R2.clean.fq.gz
+
+    ls 
+
     """
 }
