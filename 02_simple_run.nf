@@ -75,8 +75,9 @@ process run_low_complex {
     conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/06_bbduk_highC", mode: "${params.savemode}"
     tag { pair_id }
-
-
+    
+    label 'medium'
+    
     input:
     set pair_id, file(reads) from reads_trimmed_ch
 
@@ -104,7 +105,9 @@ process remove_phiX {
     conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/07_bbduk_phix", mode: "${params.savemode}"
     tag { pair_id }
-
+    
+    label 'medium'
+    
     input:
     set pair_id, file(reads) from reads_highC_ch
 
@@ -133,6 +136,8 @@ process remove_host {
     conda 'conda_yml/bbmap_env.yml'
     publishDir "${params.outdir}/08_bbmap_host", mode: "${params.savemode}"
     tag { pair_id }
+    
+    label 'medium'
 
     input:
     set pair_id, file(reads) from reads_phix_ch
@@ -145,10 +150,10 @@ process remove_host {
 
     """
     
-    bbmap.sh -Xmx15g threads=6 \
+    bbmap.sh -Xmx30g threads=$task.cpus \
     minid=0.95 maxindel=3 bwr=0.16 bw=12 \
     quickmatch fast minhits=2 \
-    path=${params.host_dir} \
+    ref=${params.host_dir}/${params.host_file} \
     in=${pair_id}.R1.trimmed.highC.phix.fq.gz\
     in2=${pair_id}.R2.trimmed.highC.phix.fq.gz \
     outu=${pair_id}.R1.clean.fq.gz \
@@ -380,7 +385,7 @@ process Kraken_classification {
     conda 'conda_yml/kraken2_env.yml'
     publishDir "${params.outdir}/15_kraken2_classification", mode: "${params.savemode}"
     tag { "all samples" }
-    label 'small'
+    label 'medium'
 
     input:
     set pair_id, file(reads) from clean_data_ch5

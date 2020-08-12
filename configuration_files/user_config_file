@@ -18,7 +18,6 @@ params.reads = "$baseDir/test_data/*.R{1,2}.fastq.gz"
 params.setsize = 2   
 params.outdir = "results"
 
-
 // General configuration variables
 params.pwd = "$PWD"
 params.help = false
@@ -37,8 +36,8 @@ params.adapter_dir = "$baseDir/databases/trimmomatic_adapters"
 // contamination removal configuration 
 params.phix_dir = "$baseDir/databases/contaminants"
 params.phix_file = "NC_001422_phix.fna"
-params.host_dir = "~/Temp/databases"
-params.host_file = "hg19_main_mask_ribo_animal_allplant_allfungus.fa"
+params.host_dir = "/cluster/home/thhaverk/thhaverk/database/contamination"
+params.host_file = "hg19_main_mask_ribo_animal_allplant_allfungus.fasta"
 
 /* nonpareil settings
  * specify the lowest amount of reads to use, e.g. when having 20 million reads,
@@ -49,4 +48,5 @@ params.query = 100
 params.subsample = 1024
 
 // kraken 2 database location
-params.kraken2_dir = "/Users/Thomieh_cloud/Dropbox/github_projects/Talos/databases/kraken_2_mini/minikraken2_v2_8GB_201904_UPDATE"
+params.kraken2.path = "/cluster/work/users/thhaverk/kraken2_db"
+params.kraken2_dir = "kraken_2_ABVPHPr_20200811"
