@@ -40,6 +40,8 @@ process fastqc {
     publishDir "${params.outdir}/01_fastqc", mode: "copy"
     
     tag "FASTQC on $sample_id"
+    
+    executor='slurm'
     label 'small'
 
     input:
@@ -64,6 +66,8 @@ process multiqc {
     conda 'conda_yml/multiqc_env.yml'
     publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
     tag "multiqc on fastqc"
+    
+     executor='slurm'
     label 'small'
 
     input:
@@ -88,6 +92,8 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/03_nonpareil_data", mode: "${params.savemode}"
     tag { sample_id }
+    
+    executor='slurm'
     label 'medium'
 
     input:
@@ -119,6 +125,8 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/04_coverage_plots_raw_data", mode: "${params.savemode}"
     tag { "All_samples" }
+    
+    executor='slurm'
     label 'small'
 
     input:

@@ -48,5 +48,5 @@ params.query = 100
 params.subsample = 1024
 
 // kraken 2 database location
-params.kraken2.path = "/cluster/work/users/thhaverk/kraken2_db"
-params.kraken2_dir = "kraken_2_ABVPHPr_20200811"
+params.kraken2.path = "/cluster/shared/databases/Kraken2"
+params.kraken2_dir = "12-08-2020-no-NT"
