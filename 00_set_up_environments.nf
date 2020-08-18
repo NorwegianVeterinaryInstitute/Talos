@@ -24,6 +24,7 @@ log.info """\
 process fastqc {
     conda 'conda_yml/fastqc_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -34,6 +35,7 @@ process fastqc {
 process multiqc {
     conda 'conda_yml/multiqc_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -44,6 +46,7 @@ process multiqc {
 process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -54,6 +57,7 @@ process run_coverage {
 process run_trim {
     conda 'conda_yml/trimmomatic_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -64,6 +68,7 @@ process run_trim {
 process run_low_complex {
     conda 'conda_yml/bbmap_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -75,6 +80,7 @@ process run_low_complex {
 process Average_gsize {
     conda 'conda_yml/microbecensus_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -85,6 +91,7 @@ process Average_gsize {
 process hulk_calculation {
     conda 'conda_yml/hulk_env.yml'
     
+    executor='local'
     label 'small'
     
     """
@@ -96,6 +103,7 @@ process hulk_calculation {
 process Kraken_classification {
     conda 'conda_yml/kraken2_env.yml'
     
+    executor='local'
     label 'small'
     
     """

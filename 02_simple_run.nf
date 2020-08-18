@@ -22,6 +22,8 @@ log.info """\
          Trimmomatic adapters directory : ${params.adapter_dir}
          phix - directory               : ${params.phix_dir} 
          host - directory               : ${params.host_dir}
+         Kraken2 db -directory          : ${params.kraken2.path}
+         Kraken2 db name                : ${params.kraken2_dir}
          """
          .stripIndent()
 
@@ -45,6 +47,7 @@ process run_trim {
     publishDir "${params.outdir}/05_fastq_trimmed", mode: "${params.savemode}"
     tag { pair_id }
 
+    executor='slurm'
     label 'medium'
 
     input:
@@ -76,6 +79,7 @@ process run_low_complex {
     publishDir "${params.outdir}/06_bbduk_highC", mode: "${params.savemode}"
     tag { pair_id }
     
+    executor='slurm'
     label 'medium'
     
     input:
@@ -106,6 +110,7 @@ process remove_phiX {
     publishDir "${params.outdir}/07_bbduk_phix", mode: "${params.savemode}"
     tag { pair_id }
     
+    executor='slurm'
     label 'medium'
     
     input:
@@ -137,7 +142,8 @@ process remove_host {
     publishDir "${params.outdir}/08_bbmap_host", mode: "${params.savemode}"
     tag { pair_id }
     
-    label 'medium'
+    executor='slurm'
+    label 'large'
 
     input:
     set pair_id, file(reads) from reads_phix_ch
@@ -174,6 +180,8 @@ process fastqc {
     publishDir "${params.outdir}/01_fastqc", mode: "copy"
     
     tag "FASTQC on $sample_id"
+    
+    executor='slurm'
     label 'small'
 
     input:
@@ -197,6 +205,8 @@ process fastqc {
 process multiqc {
     conda 'conda_yml/multiqc_env.yml'
     publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
+    
+    executor='slurm'
     label 'small'
 
     input:
@@ -223,6 +233,9 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/09_nonpareil", mode: "${params.savemode}"
     tag { pair_id }
+
+    executor='slurm'
+    label 'medium'
     
 
     input:
@@ -255,6 +268,8 @@ process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
     publishDir "${params.outdir}/10_coverage_plots_clean_data", mode: "${params.savemode}"
     tag { "all samples" }
+
+    executor='slurm'
     label 'small'
 
     input:
@@ -283,6 +298,9 @@ process Average_gsize {
     publishDir "${params.outdir}/11_average_genome_size", mode: "${params.savemode}"
     tag { pair_id }
 
+    executor='slurm'
+    label 'medium'
+
     input:
     set pair_id, file(reads) from clean_data_ch3
 
@@ -302,6 +320,8 @@ process plot_avgsizes {
     conda 'conda_yml/microbecensus_env.yml'
     publishDir "${params.outdir}/12_average_genome_size_plots", mode: "${params.savemode}"
     tag { "all_samples" }
+
+    executor='slurm'
     label 'small'
 
     input:
@@ -324,6 +344,8 @@ process hulk_calculation {
     conda 'conda_yml/hulk_env.yml'
     publishDir "${params.outdir}/13_hulk_distances", mode: "${params.savemode}"
     tag { "all samples" }
+
+    executor='slurm'
     label 'medium'
 
     input:
@@ -350,6 +372,8 @@ process hulk_distance {
     conda 'conda_yml/hulk_env.yml'
     publishDir "${params.outdir}/14_hulk_heatmap", mode: "${params.savemode}"
     tag { "all samples" }
+
+    executor='slurm'
     label 'small'
 
     input:
@@ -385,7 +409,9 @@ process Kraken_classification {
     conda 'conda_yml/kraken2_env.yml'
     publishDir "${params.outdir}/15_kraken2_classification", mode: "${params.savemode}"
     tag { "all samples" }
-    label 'medium'
+
+    executor='slurm'
+    label 'bigmem'
 
     input:
     set pair_id, file(reads) from clean_data_ch5
@@ -399,7 +425,7 @@ process Kraken_classification {
     
     kraken2 -v
     
-    kraken2 -db ${params.kraken2_dir} \
+    kraken2 -db ${params.kraken2.path}/${params.kraken2_dir} \
     --threads $task.cpus \
     --minimum-base-quality 20 \
     --gzip-compressed \

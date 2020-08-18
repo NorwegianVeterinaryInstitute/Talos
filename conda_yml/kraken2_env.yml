@@ -3,4 +3,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - kraken2=2.0.7
+  - kraken2=2.0.9beta
