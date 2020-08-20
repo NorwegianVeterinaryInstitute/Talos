@@ -37,7 +37,7 @@ Channel
 process fastqc {
     conda 'conda_yml/fastqc_env.yml'
 
-    publishDir "${params.outdir}/01_fastqc", mode: "copy"
+    publishDir "${params.outdir}/01_fastqc", mode: "${params.savemode}"
     
     tag "FASTQC on $sample_id"
     
@@ -87,6 +87,8 @@ process multiqc {
 
 /*
  * Calculate the sequence coverage of the metagenomes
+ * I only use the forward reads of the dataset, because the presence of the same kmer in the reverse reads
+ * can create a diversity estimate that is incorrect.
  */
 process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
@@ -109,11 +111,15 @@ process run_coverage {
     
 
     """
+    echo only processing file: ${reads[0]}
     
-    gunzip -f *.gz
-    nonpareil -s *.R1.* -T kmer -f fastq -b ${sample_id}_R1 \
+    gunzip -c ${reads[0]} > forward_reads.fastq
+
+    nonpareil -s forward_reads.fastq -T kmer -f fastq -b ${sample_id}_R1 \
      -X ${params.query} -n ${params.subsample} -t $task.cpus
-     sleep 10s
+
+     #cleanup area
+     rm -r forward_reads.fastq
     """
 }
 
