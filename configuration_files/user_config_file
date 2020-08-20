@@ -14,7 +14,7 @@
 
 
 //Specify the location and format of the input data
-params.reads = "$baseDir/test_data/*.R{1,2}.fastq.gz"
+params.reads = "$baseDir/test_data/*R{1,2}*.fastq.gz"
 params.setsize = 2   
 params.outdir = "results"
 
@@ -43,6 +43,7 @@ params.host_file = "hg19_main_mask_ribo_animal_allplant_allfungus.fasta"
  * specify the lowest amount of reads to use, e.g. when having 20 million reads,
  * used a max of 2 million. (10 x lower)
  * and specify the minimum amount to subsample, again 10 x lower)
+ * For testing small datasets use query=100 and subsample=1024
  */ 
 params.query = 100
 params.subsample = 1024

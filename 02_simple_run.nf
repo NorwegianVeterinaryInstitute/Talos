@@ -227,7 +227,9 @@ process multiqc {
 
 
 /*
- * Calculate the sequence coverage of the clean metagenomes
+ * Calculate the sequence coverage of the metagenomes
+ * I only use the forward reads of the dataset, because the presence of the same kmer in the reverse reads
+ * can create a diversity estimate that is incorrect.
  */
 process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
@@ -251,11 +253,15 @@ process run_coverage {
     
 
     """
+    echo only processing file: ${reads[0]}
     
-    gunzip -f *.fq.gz
-    nonpareil -s *.R1.clean.fq -T kmer -f fastq -b ${pair_id}_R1 \
+    gunzip -c ${reads[0]} > forward_reads.fastq
+
+    nonpareil -s forward_reads.fastq -T kmer -f fastq -b ${sample_id}_R1 \
      -X ${params.query} -n ${params.subsample} -t $task.cpus
-     sleep 10s
+
+     #cleanup area
+     rm -r forward_reads.fastq
     
     """
 }
