@@ -10,3 +10,6 @@ results/
 
 # ignore folder with kraken2 minidatabase
 databases/kraken_2_mini
+
+#ignore the datasets in the test_data folder
+test_data/
