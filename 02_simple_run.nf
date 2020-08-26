@@ -44,7 +44,6 @@ Channel
 
 process run_trim {
     conda 'conda_yml/trimmomatic_env.yml'
-    publishDir "${params.outdir}/05_fastq_trimmed", mode: "${params.savemode}"
     tag { pair_id }
 
     executor='slurm'
@@ -76,7 +75,7 @@ process run_trim {
  */
 process run_low_complex {
     conda 'conda_yml/bbmap_env.yml'
-    publishDir "${params.outdir}/06_bbduk_highC", mode: "${params.savemode}"
+
     tag { pair_id }
     
     executor='slurm'
@@ -107,7 +106,7 @@ process run_low_complex {
  */
 process remove_phiX {
     conda 'conda_yml/bbmap_env.yml'
-    publishDir "${params.outdir}/07_bbduk_phix", mode: "${params.savemode}"
+    
     tag { pair_id }
     
     executor='slurm'
@@ -139,7 +138,7 @@ process remove_phiX {
 
 process remove_host {
     conda 'conda_yml/bbmap_env.yml'
-    publishDir "${params.outdir}/08_bbmap_host", mode: "${params.savemode}"
+    publishDir "${params.outdir}/03_clean_data", mode: "${params.savemode}"
     tag { pair_id }
     
     executor='slurm'
@@ -177,7 +176,7 @@ process remove_host {
 process fastqc {
     conda 'conda_yml/fastqc_env.yml'
 
-    publishDir "${params.outdir}/01_fastqc", mode: "copy"
+    publishDir "${params.outdir}/04_Cleaned_fastqc", mode: "copy"
     
     tag "FASTQC on $sample_id"
     
@@ -204,7 +203,7 @@ process fastqc {
 
 process multiqc {
     conda 'conda_yml/multiqc_env.yml'
-    publishDir "${params.outdir}/02_multiqc", mode: "${params.savemode}"
+    publishDir "${params.outdir}/05_Cleaned_multiqc", mode: "${params.savemode}"
     
     executor='slurm'
     label 'small'
@@ -224,6 +223,9 @@ process multiqc {
     """
 } 
 
+/************************************************************
+*********  Data analysis of clean data **********************
+*************************************************************/
 
 
 /*
@@ -233,11 +235,11 @@ process multiqc {
  */
 process run_coverage {
     conda 'conda_yml/nonpareil_env.yml'
-    publishDir "${params.outdir}/09_nonpareil", mode: "${params.savemode}"
+    publishDir "${params.outdir}/06_nonpareil", mode: "${params.savemode}"
     tag { pair_id }
 
     executor='slurm'
-    label 'medium'
+    label 'large'
     
 
     input:
@@ -257,7 +259,7 @@ process run_coverage {
     
     gunzip -c ${reads[0]} > forward_reads.fastq
 
-    nonpareil -s forward_reads.fastq -T kmer -f fastq -b ${sample_id}_R1 \
+    nonpareil -s forward_reads.fastq -T kmer -f fastq -b ${pair_id}_R1 \
      -X ${params.query} -n ${params.subsample} -t $task.cpus
 
      #cleanup area
@@ -272,7 +274,7 @@ process run_coverage {
 
  process plot_coverage {
     conda 'conda_yml/nonpareil_env.yml'
-    publishDir "${params.outdir}/10_coverage_plots_clean_data", mode: "${params.savemode}"
+    publishDir "${params.outdir}/07_coverage_plots_clean_data", mode: "${params.savemode}"
     tag { "all samples" }
 
     executor='slurm'
@@ -293,19 +295,24 @@ process run_coverage {
     """
 }
 
-/************************************************************
-*********  Data analysis of clean data **********************
-*************************************************************/
 
-/* Calculate average genome size using microbecensus */
+/* Calculate average genome size using microbecensus
+ * Multithreading is functional after testing.
+ * cpu usage is set to the "medium" queue.
+ * to reduce the time used for this step, I reduce the number of reads sampled
+ * Using 5.000.000 reads to calculate the AVG.
+ * added the verbose option to see the settings when running.
+
+ */
 
 process Average_gsize {
     conda 'conda_yml/microbecensus_env.yml'
-    publishDir "${params.outdir}/11_average_genome_size", mode: "${params.savemode}"
+    publishDir "${params.outdir}/08_average_genome_size", mode: "${params.savemode}"
     tag { pair_id }
 
     executor='slurm'
     label 'medium'
+   
 
     input:
     set pair_id, file(reads) from clean_data_ch3
@@ -315,7 +322,7 @@ process Average_gsize {
     
     """
     
-    run_microbe_census.py -n 100000000 -t $task.cpus \
+    run_microbe_census.py -n 5000000 -t $task.cpus -v \
      ${pair_id}.R1.clean.fq.gz,${pair_id}.R2.clean.fq.gz \
      ${pair_id}.avgs_estimate.txt
 
@@ -324,7 +331,7 @@ process Average_gsize {
 
 process plot_avgsizes {
     conda 'conda_yml/microbecensus_env.yml'
-    publishDir "${params.outdir}/12_average_genome_size_plots", mode: "${params.savemode}"
+    publishDir "${params.outdir}/09_average_genome_size_plots", mode: "${params.savemode}"
     tag { "all_samples" }
 
     executor='slurm'
@@ -348,7 +355,7 @@ process plot_avgsizes {
 
 process hulk_calculation {
     conda 'conda_yml/hulk_env.yml'
-    publishDir "${params.outdir}/13_hulk_distances", mode: "${params.savemode}"
+    publishDir "${params.outdir}/10_hulk_distances", mode: "${params.savemode}"
     tag { "all samples" }
 
     executor='slurm'
@@ -376,7 +383,7 @@ process hulk_calculation {
 
 process hulk_distance {
     conda 'conda_yml/hulk_env.yml'
-    publishDir "${params.outdir}/14_hulk_heatmap", mode: "${params.savemode}"
+    publishDir "${params.outdir}/11_hulk_heatmap", mode: "${params.savemode}"
     tag { "all samples" }
 
     executor='slurm'
@@ -397,23 +404,10 @@ process hulk_distance {
     """
 }
 
-/* Do taxonomic classification with kraken 2 */
-
-/* kraken2 -db ${params.kraken2_dir} \
-    --threads $task.cpus \
-    --minimum-base-quality 20 \
-    --gzip-compressed \
-    --output ${pair_id}.kr2.out \
-    --report ${pair_id}.kr2.report \
-    --classified-out ${pair_id}.classified.R#.fastq.gz  \
-    --unclassified-out ${pair_id}.unclassified.R#.fastq.gz \
-    --paired \
-    ${pair_id}.R1.clean.fq.gz ${pair_id}.R2.clean.fq.gz */
-
 
 process Kraken_classification {
     conda 'conda_yml/kraken2_env.yml'
-    publishDir "${params.outdir}/15_kraken2_classification", mode: "${params.savemode}"
+    publishDir "${params.outdir}/12_kraken2_classification", mode: "${params.savemode}"
     tag { "all samples" }
 
     executor='slurm'
@@ -442,7 +436,17 @@ process Kraken_classification {
     --paired \
     ${pair_id}.R1.clean.fq.gz ${pair_id}.R2.clean.fq.gz
 
-    ls 
+    ls -lah
+
+    #removing dataset that are not needed
+    rm -r *.classified.R*.fastq.gz
+    rm -r *.unclassified.R*.fastq.gz
+
+    #compressing the *.out file
+    gzip *.out
+
+    #checking the files left
+    ls -la
 
     """
 }
