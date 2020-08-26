@@ -45,8 +45,8 @@ params.host_file = "hg19_main_mask_ribo_animal_allplant_allfungus.fasta"
  * and specify the minimum amount to subsample, again 10 x lower)
  * For testing small datasets use query=100 and subsample=1024
  */ 
-params.query = 100
-params.subsample = 1024
+params.query = 100000
+params.subsample = 2048
 
 // kraken 2 database location
 params.kraken2.path = "/cluster/shared/databases/Kraken2"
